@@ -55,6 +55,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Disable provenance attestation — without this, docker/build-push-action
+          # creates a multi-platform manifest index that breaks plain `docker pull`
+          # on some clients when only a single platform is built.
+          provenance: false
           # Build args use Dockerfile defaults; override here if needed
           build-args: |
             CUDA_BASE_IMAGE=nvidia/cuda:13.1.1-devel-ubuntu24.04
