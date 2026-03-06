@@ -6,16 +6,17 @@ A production-ready Docker setup for ComfyUI that unlocks the full potential of N
 
 This Docker setup gives you:
 
-- **🚀 3x faster image generation** vs standard 16-bit models
-- **💾 3.5x less VRAM usage** - Run FLUX.2 Klein on 16GB GPUs
+- **🚀 3x faster generation** vs standard 16-bit models
+- **💾 3.5x less VRAM usage** - Run FLUX.1-dev on 16GB GPUs
 - **🔒 Sandboxed environment** - ComfyUI runs in a container, your system stays clean
 - **💪 Blackwell optimization** - Native NVFP4 support for RTX 50 series GPUs
-- **📦 Persistent data** - Models, outputs, and custom nodes stay on your host machine
-- **🎨 Full ComfyUI features** - Custom nodes, workflows, everything works
+- **📦 Persistent data** - Models, outputs, custom nodes, and workflows stay on your host machine
+- **🎨 Images, video, and audio** - Full support for image, video, and audio generation workflows
+- **🔌 Custom nodes just work** - Install via ComfyUI Manager, restart container — no image rebuild needed
 
 ## Why NVFP4 Matters
 
-NVIDIA's Blackwell architecture introduces NVFP4, a 4-bit floating-point format that maintains image quality while dramatically reducing memory usage and increasing speed. This isn't your typical "lossy compression" - it's a hardware-accelerated precision format designed specifically for AI workloads.
+NVIDIA's Blackwell architecture introduces NVFP4, a 4-bit floating-point format that maintains quality while dramatically reducing memory usage and increasing speed. This isn't typical lossy compression — it's a hardware-accelerated precision format designed specifically for AI workloads.
 
 **Real-world results:**
 - FLUX.1-dev: ~12 seconds on RTX 5090 (vs 40+ seconds in BF16)
@@ -26,24 +27,24 @@ NVIDIA's Blackwell architecture introduces NVFP4, a 4-bit floating-point format 
 
 ### Hardware
 - **NVIDIA GPU**: Blackwell architecture (RTX 50 series) recommended
-  - RTX 5090, 5080, 5070, etc.
+  - RTX 5090, 5080, 5070 Ti, 5070, 5060 Ti, etc.
   - Also works on Ampere (RTX 30xx) and Ada (RTX 40xx) but without NVFP4 acceleration
 - **VRAM**: 16GB minimum, 24GB+ recommended
-- **Storage**: 100GB+ free (AI models are large and so is the image for comfyui)
+- **Storage**: 100GB+ free (AI models are large)
 - **RAM**: 16GB minimum
 
 ### Software
 - **Docker**: Version 20.10 or newer ([Install Docker](https://docs.docker.com/engine/install/))
 - **Docker Compose**: Version 2.0 or newer (usually included with Docker)
 - **NVIDIA Container Toolkit**: Required for GPU support ([Install Guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html))
-- **NVIDIA Driver**: 560.x or newer for Blackwell support, you really want the latest for the best compatibility and performance.
+- **NVIDIA Driver**: 560.x or newer (use the latest available for best compatibility)
 
 ## Quick Start
 
 ### 1. Clone this repository
 
 ```bash
-git clone https://github.com/ChiefNakor/comfyui-blackwell-docker.git
+git clone https://github.com/loukaniko85/comfyui-blackwell-docker.git
 cd comfyui-blackwell-docker
 ```
 
@@ -66,7 +67,7 @@ cp .env.example .env
 docker-compose build
 ```
 
-This takes 10-15 minutes on first build, maybe longer. Grab a coffee ☕
+First build takes 15-30 minutes (compiling SageAttention from source). Grab a coffee ☕
 
 ### 5. Start ComfyUI
 
@@ -89,19 +90,20 @@ After setup, your folder should look like this:
 comfyui-blackwell-docker/
 ├── docker-compose.yml       # Container configuration
 ├── Dockerfile               # Image build instructions
+├── startup.sh               # Container entrypoint script
 ├── .env                     # Your custom settings (create from .env.example)
-├── .env.example            # Template configuration with docs
-├── wheels.txt              # Python packages (Nunchaku wheel)
-├── models/                 # AI models (checkpoints, VAEs, etc.)
-├── output/                 # Generated images go here
-├── input/                  # Place input images here
-├── custom_nodes/           # ComfyUI custom nodes
-└── user/                   # Workflows and settings
+├── .env.example             # Template configuration with docs
+├── wheels.txt               # Extra Python packages (Nunchaku wheel)
+├── models/                  # AI models (checkpoints, VAEs, LoRAs, etc.)
+├── output/                  # Generated images, videos, and audio
+├── input/                   # Place input files for img2img/video workflows
+├── custom_nodes/            # ComfyUI custom nodes
+└── user/                    # Workflows and settings
 ```
 
 ## Installing Custom Nodes
 
-This is where Docker differs from a normal ComfyUI installation:
+Custom nodes work like a normal ComfyUI installation — **no image rebuild required**.
 
 ### The Process
 
@@ -110,68 +112,80 @@ This is where Docker differs from a normal ComfyUI installation:
    - Use ComfyUI Manager to install nodes
    - The node code downloads to `./custom_nodes/`
 
-2. **Rebuild the Docker image** (this is the critical part!)
+2. **Restart the container** (that's it!)
    ```bash
-   docker-compose down
-   docker-compose build
-   docker-compose up -d
+   docker-compose restart comfyui
    ```
 
-### Why Rebuild?
+### Why Just a Restart?
 
-Custom nodes often have Python dependencies listed in `requirements.txt`. The Docker build process:
-1. Finds these `requirements.txt` files
-2. Installs dependencies in the image
-3. Protects your PyTorch version from conflicts
-4. Ensures everything starts cleanly
-
-If you don't rebuild, the node might appear installed but fail at runtime when it can't find its dependencies.
+On every startup, `startup.sh` automatically:
+1. Scans all `custom_nodes/*/requirements.txt` files
+2. Installs any missing Python dependencies (PyTorch version is always protected)
+3. Runs `install.py` for nodes that need post-install setup
 
 ### Adding Multiple Nodes
 
-You can install several nodes, then rebuild once:
+Install as many nodes as you want via Manager, then restart once:
 ```bash
 # Install node 1, node 2, node 3 via Manager
-docker-compose down
-docker-compose build  # Installs all new requirements
-docker-compose up -d
+docker-compose restart comfyui
+# All requirements are installed automatically on startup
 ```
+
+> **When you DO need a full rebuild:** version changes in `.env` (CUDA, PyTorch, SageAttention), changes to `wheels.txt`, or modifications to the `Dockerfile`.
+
+## Supported Workflows
+
+### Images
+- FLUX.1-dev / FLUX.1-schnell / FLUX.2-klein (NVFP4, FP8, BF16)
+- Stable Diffusion 1.5, 2.1, XL, 3, 3.5
+- HiDream, Chroma, and all ComfyUI-compatible image models
+
+### Video
+- **HunyuanVideo** — state-of-the-art open video generation
+- **Wan 2.1** — high quality text-to-video and image-to-video
+- **AnimateDiff** — animate Stable Diffusion models
+- **CogVideoX** — video generation from Tsinghua
+- **LTX-Video** — fast high-quality video generation
+- **Mochi** — high-fidelity video generation
+
+### Audio
+- Audio generation nodes (ACE-Step, CosyVoice, AudioCraft, etc.)
+- System dependencies for `torchaudio`, `soundfile`, `librosa` are pre-installed
 
 ## Using NVFP4 Models
 
-To get the performance benefits, you need 4-bit quantized models:
+To get maximum performance, use 4-bit quantized models:
 
 ### Where to Get NVFP4 Models
 
 1. **FLUX Models** - [Nunchaku FLUX on HuggingFace](https://huggingface.co/mit-han-lab)
    - Download quantized FLUX.1-dev (6.77GB vs 24GB)
    - Place in `models/diffusion_models/`
-   - black-forest-labs have [official nvfp4 models](https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-nvfp4) too, look around!
+   - Black Forest Labs also have [official NVFP4 models](https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-nvfp4)
 
 2. **Other Models** - Check [Nunchaku documentation](https://nunchaku.tech/docs/)
 
 ### Using Standard Models
 
-Regular (BF16/FP16) models still work fine - you just won't get the NVFP4 speed boost. The setup works with all ComfyUI models.
+Regular BF16/FP16 models still work — you just won't get the NVFP4 speed boost. The setup is fully compatible with all standard ComfyUI models.
 
-### A Note on Text Models and NVFP4
+### A Note on Text Encoders and NVFP4
 
-For the life of me I couldn't get nvfp4 text models working with CLIP loader- the way nvfp4 stuffs up the shape of the model hasn't been resolved yet in comfyui.
-You may have to just use a fp8/fp16 model for this at this stage - may change in the future.
-Your mileage may vary.
+NVFP4 text encoder (CLIP/T5) models currently have shape issues with ComfyUI's CLIP loader. Use FP8 or FP16 text encoders alongside your NVFP4 diffusion model for now. This may be resolved in a future ComfyUI update.
 
 ## Configuration Guide
 
-The `.env` file controls everything. There is a detailed explanation of whats going on in the env.example file, you will need to create your own .env file and set it up accordingly.
+The `.env` file controls everything. The `.env.example` file has detailed documentation for every setting.
 
-Key settings:
-
-### Paths (adjust to your preference)
+### GPU Architecture (`TORCH_CUDA_ARCH_LIST`)
 
 ```env
-MODELS_PATH=./models        # Where AI models live
-OUTPUT_PATH=./output        # Where images are saved
-CUSTOM_NODES_PATH=./custom_nodes
+TORCH_CUDA_ARCH_LIST=12.0   # RTX 50 series (Blackwell)
+TORCH_CUDA_ARCH_LIST=8.9    # RTX 40 series (Ada)
+TORCH_CUDA_ARCH_LIST=8.6    # RTX 30 series (Ampere)
+TORCH_CUDA_ARCH_LIST=7.5    # RTX 20 series (Turing)
 ```
 
 ### GPU Memory Management
@@ -181,70 +195,57 @@ RESERVE_VRAM=1.5           # Leave 1.5GB for system (adjust per your GPU)
 COMFYUI_ARGS=--lowvram --async-offload  # Memory optimization flags
 ```
 
-For 24GB+ cards, you can remove `--lowvram` for a speed boost:
+For 24GB+ cards, remove `--lowvram` for a speed boost:
 ```env
 COMFYUI_ARGS=--async-offload
 ```
 
-### Updating Versions
+### SageAttention
 
- - When PyTorch updates, you will need to go wheel hunting and edit these:
+Controls the attention optimization library. Set in `.env`, then rebuild.
 
 ```env
-TORCH_WHEEL_URL
-TORCHAUDIO_WHEEL_URL
-TORCHVISION_WHEEL_URL
+SAGEATTENTION_VERSION=v2   # Stable, works for all image and most video models
+SAGEATTENTION_VERSION=v3   # NVFP4-native, best for Blackwell — requires rebuild
+SAGEATTENTION_VERSION=none # Disable entirely
 
+# Enable/disable the global --use-sage-attention flag at startup.
+# Set to 0 to keep the library installed but only activate it per-model
+# using a "Patch Sage Attention" node (useful for Wan 2.1 / SD1.5 which
+# can produce black frames with the global flag enabled).
+SAGEATTENTION_USE=1
 ```
- - When CUDA updates, you will need to edit:
 
-```
-CUDA_BASE_IMAGE
-```
-
-This is explained in more detail in env.example
-
-### Updating Nunchaku or Adding Other Wheels
-
-Edit `wheels.txt` with the new wheel URL from: https://github.com/nunchaku-ai/nunchaku/releases
-Nunchaku is in wheels.txt so it will be part of the build, comment this out if you don't want it.
-NOTE: You may need to change the config.ini setting security_level = weak to get nunchaku to install, it relaxes the rule so the installer works.
-
-If you have other python packages you specifically want to install, you can by specifying their wheel in wheels.txt. This is explained in further detail in the wheels.txt file.
-
-Then rebuild:
+Changing `SAGEATTENTION_VERSION` requires a rebuild:
 ```bash
 docker-compose build --no-cache
+docker-compose up -d
 ```
 
-### Sage Attention
+### Nunchaku (NVFP4 Quantization Engine)
 
-SageAttention is installed from [source](https://github.com/thu-ml/SageAttention) - because the pypi wheel is from 2024 (old)... So your choices are either v2, v3 or none. Select this as a variable in .env.
+Nunchaku provides the NVFP4 inference backend. Edit `wheels.txt` with the latest wheel URL from [nunchaku releases](https://github.com/nunchaku-ai/nunchaku/releases), then rebuild:
 
-From the SageAttention github repo:
->Currently, SageAttention3 works well for:
->
->1. Video generation models: CogVideoX-2B, HunyuanVideo, Mochi.
->2. Almost all image generation models, including Flux and Stable-Diffusion3.5.
->
->Note: SageAttention3 does not guarantee lossless acceleration for all models. For other video generation models, we recommend selectively using SageAttention2++ in certain layers or timesteps.
-
-So you can chop and change, you just have to change the .env and then rebuild the docker image with:
 ```bash
 docker-compose build --no-cache
+docker-compose up -d
 ```
 
-### Backup Your Setup
+> **Note:** You may need to set `security_level = weak` in `user/__manager/config.ini` to allow Nunchaku to install via ComfyUI Manager.
 
-Important directories to backup:
-- `custom_nodes/` - Your installed nodes
-- `user/` - Your workflows and settings
-- `models/` - Your downloaded models (large!)
+### Updating PyTorch or CUDA
 
-Models can be re-downloaded, but workflows and custom node configs are unique to you.
+Edit `.env` with new wheel URLs (find them at https://download.pytorch.org/whl/), then rebuild. The wheel filename must match your CUDA version, Python version (cp312 for Ubuntu 24.04), and platform.
+
+## Backup Your Setup
+
+Important directories to back up:
+- `custom_nodes/` — Your installed nodes
+- `user/` — Your workflows and settings
+- `models/` — Your downloaded models (large — can be re-downloaded)
+
+Workflows and custom node configurations are unique to you and can't be recovered if lost.
 
 ## License
 
-MIT License - See LICENSE file for details
-
-**Built with** ❤️ **by Chief Nakor for the AI art community**
+MIT License — See LICENSE file for details

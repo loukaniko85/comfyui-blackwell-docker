@@ -13,12 +13,12 @@
 # https://github.com/nunchaku-ai/nunchaku/releases
 #
 # CRITICAL: The wheel filename must match your .env configuration:
-# - PyTorch version (e.g., torch2.11 for PyTorch 2.11.x)
+# - PyTorch version (e.g., torch2.10 for PyTorch 2.10.x)
 # - Python version from PYTHON_VERSION in .env (e.g., cp312 for Python 3.12)
 # - Platform: linux_x86_64 (standard Linux)
 #
 # Current example matches:
-# - PyTorch 2.11.x (torch2.11)
+# - PyTorch 2.10.x (torch2.10)
 # - Python 3.12 (cp312)
 # - Linux x86_64
 #
