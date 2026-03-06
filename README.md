@@ -24,7 +24,7 @@ Comfy-Org/ComfyUI is the raw application. To use it on a Blackwell GPU you'd hav
 - Manage Python environment isolation yourself
 - Set up VRAM management flags
 - Handle model/output directory structure
-- 
+  
 loukaniko85/comfyui-blackwell-docker handles all of that. Specifically what it adds:
 **Blackwell CUDA 13.x PyTorch**	The official repo gives no guidance on this — wrong wheels break entirely
 **SageAttention pre-compiled**	Compiled from source against your exact CUDA+PyTorch at build time; not installable via plain pip on Blackwell
