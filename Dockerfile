@@ -88,7 +88,7 @@ RUN python3 -m pip install --upgrade pip
 WORKDIR /app
 
 # Clone ComfyUI repository
-RUN git clone --branch ${COMFYUI_BRANCH} https://github.com/comfyanonymous/ComfyUI.git .
+RUN git clone --branch ${COMFYUI_BRANCH} https://github.com/Comfy-Org/ComfyUI.git .
 
 # Install PyTorch with CUDA 13.0 support.
 # These specific wheels are critical for Blackwell GPU support.
@@ -152,6 +152,20 @@ RUN --mount=type=bind,source=.,target=/mnt/context,ro \
         find /mnt/context/custom_nodes -maxdepth 2 -name "requirements.txt" \
         -exec pip install -r {} -c /app/constraints.txt \; || true; \
     fi
+
+# Clone default custom nodes into the image.
+# startup.sh will install their requirements on first boot.
+RUN mkdir -p /app/custom_nodes && \
+    git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git       /app/custom_nodes/ComfyUI-Manager && \
+    git clone --depth 1 https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git      /app/custom_nodes/ComfyUI-Qwen-TTS && \
+    git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git             /app/custom_nodes/ComfyUI-GGUF && \
+    git clone --depth 1 https://github.com/Lightricks/ComfyUI-LTXVideo.git     /app/custom_nodes/ComfyUI-LTXVideo
+
+# Pre-install dependencies for the bundled custom nodes
+RUN for req in /app/custom_nodes/*/requirements.txt; do \
+        [ -f "$req" ] || continue; \
+        pip install -r "$req" -c /app/constraints.txt || true; \
+    done
 
 # Copy the startup script. Keeping it as a separate file avoids heredoc
 # quoting issues and makes it easy to read and lint independently.

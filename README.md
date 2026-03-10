@@ -14,6 +14,28 @@ This Docker setup gives you:
 - **🎨 Images, video, and audio** - Full support for image, video, and audio generation workflows
 - **🔌 Custom nodes just work** - Install via ComfyUI Manager, restart container — no image rebuild needed
 
+### Comparison
+
+Comfy-Org/ComfyUI is the raw application. To use it on a Blackwell GPU you'd have to manually:
+
+- Figure out that PyTorch doesn't ship a standard pip wheel for CUDA 13.x and hunt down the correct wheel URLs
+- Compile SageAttention from source against the right CUDA/PyTorch combo
+- Find, download, and configure Nunchaku for NVFP4
+- Manage Python environment isolation yourself
+- Set up VRAM management flags
+- Handle model/output directory structure
+  
+loukaniko85/comfyui-blackwell-docker handles all of that. Specifically what it adds:
+**Blackwell CUDA 13.x PyTorch**	The official repo gives no guidance on this — wrong wheels break entirely
+**SageAttention pre-compiled**	Compiled from source against your exact CUDA+PyTorch at build time; not installable via plain pip on Blackwell
+**Nunchaku / NVFP4 engine**	Wired in via wheels.txt with correct version matching
+**System isolation**	Your host Python/CUDA environment is untouched
+**One-command startup**	docker-compose up -d vs a multi-step manual setup
+**Persistent volumes**	Models, outputs, nodes, workflows properly separated from the container
+**Custom node auto-deps**	startup.sh installs node requirements on restart — no manual pip work
+**Health monitoring**	Docker restarts the container automatically if ComfyUI crashes
+**Reproducible builds**	Pinned versions mean the same image builds consistently across machines
+
 ## Why NVFP4 Matters
 
 NVIDIA's Blackwell architecture introduces NVFP4, a 4-bit floating-point format that maintains quality while dramatically reducing memory usage and increasing speed. This isn't typical lossy compression — it's a hardware-accelerated precision format designed specifically for AI workloads.
