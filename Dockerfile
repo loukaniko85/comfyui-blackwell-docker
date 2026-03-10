@@ -153,16 +153,18 @@ RUN --mount=type=bind,source=.,target=/mnt/context,ro \
         -exec pip install -r {} -c /app/constraints.txt \; || true; \
     fi
 
-# Clone default custom nodes into the image.
-# startup.sh will install their requirements on first boot.
-RUN mkdir -p /app/custom_nodes && \
-    git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git       /app/custom_nodes/ComfyUI-Manager && \
-    git clone --depth 1 https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git      /app/custom_nodes/ComfyUI-Qwen-TTS && \
-    git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git             /app/custom_nodes/ComfyUI-GGUF && \
-    git clone --depth 1 https://github.com/Lightricks/ComfyUI-LTXVideo.git     /app/custom_nodes/ComfyUI-LTXVideo
+# Clone default custom nodes into a staging directory that is NOT the volume
+# mount point. startup.sh copies them into /app/custom_nodes at runtime so
+# they are visible even when the host volume overlays /app/custom_nodes.
+RUN mkdir -p /app/default_custom_nodes && \
+    git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git       /app/default_custom_nodes/ComfyUI-Manager && \
+    git clone --depth 1 https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git      /app/default_custom_nodes/ComfyUI-Qwen-TTS && \
+    git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git             /app/default_custom_nodes/ComfyUI-GGUF && \
+    git clone --depth 1 https://github.com/Lightricks/ComfyUI-LTXVideo.git     /app/default_custom_nodes/ComfyUI-LTXVideo
 
-# Pre-install dependencies for the bundled custom nodes
-RUN for req in /app/custom_nodes/*/requirements.txt; do \
+# Pre-install dependencies for the bundled custom nodes at build time so they
+# are available in the image layers (avoids re-downloading on every startup).
+RUN for req in /app/default_custom_nodes/*/requirements.txt; do \
         [ -f "$req" ] || continue; \
         pip install -r "$req" -c /app/constraints.txt || true; \
     done

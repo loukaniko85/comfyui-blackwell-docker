@@ -4,6 +4,24 @@ set -e
 # Protect PyTorch versions from being changed by node installs
 export PIP_CONSTRAINT=/app/constraints.txt
 
+# ---------------------------------------------------------------------------
+# Seed default custom nodes into the (volume-mounted) /app/custom_nodes dir.
+# Nodes are cloned into /app/default_custom_nodes at build time so they
+# survive the volume mount that overlays /app/custom_nodes at runtime.
+# We only copy a node if it is not already present (preserves user updates).
+# ---------------------------------------------------------------------------
+if [ -d "/app/default_custom_nodes" ]; then
+    mkdir -p /app/custom_nodes
+    for src in /app/default_custom_nodes/*/; do
+        node_name=$(basename "$src")
+        dest="/app/custom_nodes/${node_name}"
+        if [ ! -d "$dest" ]; then
+            echo "Seeding default node: ${node_name}"
+            cp -r "$src" "$dest"
+        fi
+    done
+fi
+
 # Unset PIP_IGNORE_INSTALLED so we don't wastefully reinstall already-installed
 # packages on every startup. That flag is only needed at image build time to
 # ensure exact wheel versions get installed over any base-image pre-installs.
