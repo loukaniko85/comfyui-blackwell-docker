@@ -99,11 +99,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     "${TORCHVISION_WHEEL_URL}" \
     "${TORCHAUDIO_WHEEL_URL}"
 
-# Write a pip constraints file that locks PyTorch to exactly the versions
-# installed above. This prevents custom nodes from accidentally overriding them.
+# Write a pip constraints file that locks PyTorch and key packages to exact
+# versions. This prevents custom node installs from accidentally downgrading them.
+# transformers>=4.52.0 is required by ComfyUI-Qwen-TTS (check_model_inputs).
 RUN echo "torch @ ${TORCH_WHEEL_URL}" > /app/constraints.txt && \
     echo "torchvision @ ${TORCHVISION_WHEEL_URL}" >> /app/constraints.txt && \
-    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt
+    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt && \
+    echo "transformers>=4.52.0" >> /app/constraints.txt
 
 # Install SageAttention for improved attention mechanism performance.
 # Triton is required for SageAttention's CUDA kernels.

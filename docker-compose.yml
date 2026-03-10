@@ -45,7 +45,7 @@ services:
     command: >
       python3 main.py --listen 0.0.0.0
       --reserve-vram ${RESERVE_VRAM:-1.5}
-      ${COMFYUI_ARGS}
+      ${COMFYUI_ARGS:-}
     
     deploy:
       resources:
