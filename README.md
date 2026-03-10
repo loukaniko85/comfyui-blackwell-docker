@@ -13,7 +13,6 @@ This Docker setup gives you:
 - **📦 Persistent data** - Models, outputs, custom nodes, and workflows stay on your host machine
 - **🎨 Images, video, and audio** - Full support for image, video, and audio generation workflows
 - **🔌 Custom nodes just work** - Four nodes pre-installed; install more via ComfyUI Manager, restart container — no rebuild needed
-- **⚡ Flash Attention** - `flash-attn` compiled and installed for faster inference
 
 ### Pre-installed Custom Nodes
 
@@ -32,7 +31,6 @@ Comfy-Org/ComfyUI is the raw application. To use it on a Blackwell GPU you'd hav
 
 - Figure out that PyTorch doesn't ship a standard pip wheel for CUDA 13.x and hunt down the correct wheel URLs
 - Compile SageAttention from source against the right CUDA/PyTorch combo
-- Compile flash-attn from source
 - Find, download, and configure Nunchaku for NVFP4
 - Manage Python environment isolation yourself
 - Set up VRAM management flags
@@ -44,7 +42,6 @@ loukaniko85/comfyui-blackwell-docker handles all of that:
 |---------|-------------|
 | **Blackwell CUDA 13.x PyTorch** | The official repo gives no guidance on this — wrong wheels break entirely |
 | **SageAttention pre-compiled** | Compiled from source against your exact CUDA+PyTorch at build time |
-| **flash-attn pre-compiled** | Compiled from source; not installable via plain pip on Blackwell |
 | **Nunchaku / NVFP4 engine** | Wired in via `wheels.txt` with correct version matching |
 | **Bundled custom nodes** | Manager, GGUF, LTXVideo, and Qwen-TTS ready out of the box |
 | **System isolation** | Your host Python/CUDA environment is untouched |
@@ -107,7 +104,7 @@ cp .env.example .env
 docker-compose build
 ```
 
-First build takes **30–60 minutes** — SageAttention and flash-attn both compile from source. Grab a coffee ☕
+First build takes **15–30 minutes** — SageAttention compiles from source. Grab a coffee ☕
 
 ### 5. Start ComfyUI
 

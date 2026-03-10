@@ -124,13 +124,6 @@ RUN if [ "$SAGEATTENTION_VERSION" != "none" ]; then \
       rm -rf /app/tmp/sageattention; \
     fi
 
-# Install flash-attn for faster attention inference.
-# psutil is required by flash-attn's build system (--no-build-isolation means
-# it cannot fetch its own build deps, so we pre-install them explicitly).
-# Compilation takes several minutes but only runs at image build time.
-RUN pip install psutil && \
-    pip install flash-attn --no-build-isolation -c /app/constraints.txt
-
 # Install base ComfyUI requirements
 RUN pip install -r requirements.txt -c /app/constraints.txt
 
