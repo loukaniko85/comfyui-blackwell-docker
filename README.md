@@ -12,7 +12,19 @@ This Docker setup gives you:
 - **💪 Blackwell optimization** - Native NVFP4 support for RTX 50 series GPUs
 - **📦 Persistent data** - Models, outputs, custom nodes, and workflows stay on your host machine
 - **🎨 Images, video, and audio** - Full support for image, video, and audio generation workflows
-- **🔌 Custom nodes just work** - Install via ComfyUI Manager, restart container — no image rebuild needed
+- **🔌 Custom nodes just work** - Four nodes pre-installed; install more via ComfyUI Manager, restart container — no rebuild needed
+- **⚡ Flash Attention** - `flash-attn` compiled and installed for faster inference
+
+### Pre-installed Custom Nodes
+
+These nodes are bundled into the image and appear automatically on first boot:
+
+| Node | Purpose |
+|------|---------|
+| [ComfyUI-Manager](https://github.com/Comfy-Org/ComfyUI-Manager) | Install, update, and manage custom nodes |
+| [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF) | Run GGUF-quantized models (LLMs, diffusion models) |
+| [ComfyUI-LTXVideo](https://github.com/Lightricks/ComfyUI-LTXVideo) | LTX-Video generation by Lightricks |
+| [ComfyUI-Qwen-TTS](https://github.com/flybirdxx/ComfyUI-Qwen-TTS) | Text-to-speech with Qwen3-TTS |
 
 ### Comparison
 
@@ -20,21 +32,27 @@ Comfy-Org/ComfyUI is the raw application. To use it on a Blackwell GPU you'd hav
 
 - Figure out that PyTorch doesn't ship a standard pip wheel for CUDA 13.x and hunt down the correct wheel URLs
 - Compile SageAttention from source against the right CUDA/PyTorch combo
+- Compile flash-attn from source
 - Find, download, and configure Nunchaku for NVFP4
 - Manage Python environment isolation yourself
 - Set up VRAM management flags
 - Handle model/output directory structure
-  
-loukaniko85/comfyui-blackwell-docker handles all of that. Specifically what it adds:
-**Blackwell CUDA 13.x PyTorch**	The official repo gives no guidance on this — wrong wheels break entirely
-**SageAttention pre-compiled**	Compiled from source against your exact CUDA+PyTorch at build time; not installable via plain pip on Blackwell
-**Nunchaku / NVFP4 engine**	Wired in via wheels.txt with correct version matching
-**System isolation**	Your host Python/CUDA environment is untouched
-**One-command startup**	docker-compose up -d vs a multi-step manual setup
-**Persistent volumes**	Models, outputs, nodes, workflows properly separated from the container
-**Custom node auto-deps**	startup.sh installs node requirements on restart — no manual pip work
-**Health monitoring**	Docker restarts the container automatically if ComfyUI crashes
-**Reproducible builds**	Pinned versions mean the same image builds consistently across machines
+
+loukaniko85/comfyui-blackwell-docker handles all of that:
+
+| Feature | What it does |
+|---------|-------------|
+| **Blackwell CUDA 13.x PyTorch** | The official repo gives no guidance on this — wrong wheels break entirely |
+| **SageAttention pre-compiled** | Compiled from source against your exact CUDA+PyTorch at build time |
+| **flash-attn pre-compiled** | Compiled from source; not installable via plain pip on Blackwell |
+| **Nunchaku / NVFP4 engine** | Wired in via `wheels.txt` with correct version matching |
+| **Bundled custom nodes** | Manager, GGUF, LTXVideo, and Qwen-TTS ready out of the box |
+| **System isolation** | Your host Python/CUDA environment is untouched |
+| **One-command startup** | `docker-compose up -d` vs a multi-step manual setup |
+| **Persistent volumes** | Models, outputs, nodes, workflows properly separated from the container |
+| **Custom node auto-deps** | `startup.sh` installs node requirements on restart — no manual pip work |
+| **Health monitoring** | Docker restarts the container automatically if ComfyUI crashes |
+| **Reproducible builds** | Pinned versions mean the same image builds consistently across machines |
 
 ## Why NVFP4 Matters
 
@@ -89,7 +107,7 @@ cp .env.example .env
 docker-compose build
 ```
 
-First build takes 15-30 minutes (compiling SageAttention from source). Grab a coffee ☕
+First build takes **30–60 minutes** — SageAttention and flash-attn both compile from source. Grab a coffee ☕
 
 ### 5. Start ComfyUI
 
@@ -103,6 +121,8 @@ Open your browser and go to:
 ```
 http://localhost:8188
 ```
+
+The four bundled custom nodes (Manager, GGUF, LTXVideo, Qwen-TTS) are seeded into your `custom_nodes/` directory automatically on first boot.
 
 ## Directory Structure
 
@@ -119,13 +139,15 @@ comfyui-blackwell-docker/
 ├── models/                  # AI models (checkpoints, VAEs, LoRAs, etc.)
 ├── output/                  # Generated images, videos, and audio
 ├── input/                   # Place input files for img2img/video workflows
-├── custom_nodes/            # ComfyUI custom nodes
+├── custom_nodes/            # ComfyUI custom nodes (bundled ones seeded here on boot)
 └── user/                    # Workflows and settings
 ```
 
 ## Installing Custom Nodes
 
 Custom nodes work like a normal ComfyUI installation — **no image rebuild required**.
+
+ComfyUI-Manager is pre-installed, so you can use it immediately to add more nodes.
 
 ### The Process
 
@@ -142,9 +164,10 @@ Custom nodes work like a normal ComfyUI installation — **no image rebuild requ
 ### Why Just a Restart?
 
 On every startup, `startup.sh` automatically:
-1. Scans all `custom_nodes/*/requirements.txt` files
-2. Installs any missing Python dependencies (PyTorch version is always protected)
-3. Runs `install.py` for nodes that need post-install setup
+1. Seeds any missing bundled nodes into `custom_nodes/`
+2. Scans all `custom_nodes/*/requirements.txt` files
+3. Installs any missing Python dependencies (PyTorch version is always protected)
+4. Runs `install.py` for nodes that need post-install setup
 
 ### Adding Multiple Nodes
 
@@ -163,16 +186,18 @@ docker-compose restart comfyui
 - FLUX.1-dev / FLUX.1-schnell / FLUX.2-klein (NVFP4, FP8, BF16)
 - Stable Diffusion 1.5, 2.1, XL, 3, 3.5
 - HiDream, Chroma, and all ComfyUI-compatible image models
+- GGUF-quantized diffusion models (via ComfyUI-GGUF)
 
 ### Video
+- **LTX-Video** — fast high-quality video generation (pre-installed)
 - **HunyuanVideo** — state-of-the-art open video generation
 - **Wan 2.1** — high quality text-to-video and image-to-video
 - **AnimateDiff** — animate Stable Diffusion models
 - **CogVideoX** — video generation from Tsinghua
-- **LTX-Video** — fast high-quality video generation
 - **Mochi** — high-fidelity video generation
 
 ### Audio
+- **Qwen3-TTS** — text-to-speech via pre-installed ComfyUI-Qwen-TTS node
 - Audio generation nodes (ACE-Step, CosyVoice, AudioCraft, etc.)
 - System dependencies for `torchaudio`, `soundfile`, `librosa` are pre-installed
 
@@ -192,6 +217,10 @@ To get maximum performance, use 4-bit quantized models:
 ### Using Standard Models
 
 Regular BF16/FP16 models still work — you just won't get the NVFP4 speed boost. The setup is fully compatible with all standard ComfyUI models.
+
+### Using GGUF Models
+
+Place `.gguf` model files in `models/diffusion_models/` (or the appropriate subdirectory). ComfyUI-GGUF is pre-installed and will handle them automatically.
 
 ### A Note on Text Encoders and NVFP4
 

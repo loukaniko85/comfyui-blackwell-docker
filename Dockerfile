@@ -124,6 +124,11 @@ RUN if [ "$SAGEATTENTION_VERSION" != "none" ]; then \
       rm -rf /app/tmp/sageattention; \
     fi
 
+# Install flash-attn for faster attention inference.
+# Requires --no-build-isolation so it can detect the installed PyTorch/CUDA.
+# Compilation takes several minutes but only runs at image build time.
+RUN pip install flash-attn --no-build-isolation -c /app/constraints.txt
+
 # Install base ComfyUI requirements
 RUN pip install -r requirements.txt -c /app/constraints.txt
 
@@ -168,6 +173,10 @@ RUN for req in /app/default_custom_nodes/*/requirements.txt; do \
         [ -f "$req" ] || continue; \
         pip install -r "$req" -c /app/constraints.txt || true; \
     done
+
+# ComfyUI-Qwen-TTS requires transformers>=4.52.0 for check_model_inputs.
+# Force-upgrade here so the pinned PyTorch versions are still respected.
+RUN pip install "transformers>=4.52.0" -c /app/constraints.txt
 
 # Copy the startup script. Keeping it as a separate file avoids heredoc
 # quoting issues and makes it easy to read and lint independently.
