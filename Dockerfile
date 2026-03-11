@@ -106,7 +106,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN echo "torch @ ${TORCH_WHEEL_URL}" > /app/constraints.txt && \
     echo "torchvision @ ${TORCHVISION_WHEEL_URL}" >> /app/constraints.txt && \
     echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt && \
-    echo "transformers>=4.51.3" >> /app/constraints.txt
+    echo "transformers==4.51.3" >> /app/constraints.txt
 
 # Install SageAttention for improved attention mechanism performance.
 # Triton is required for SageAttention's CUDA kernels.
