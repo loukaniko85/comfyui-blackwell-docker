@@ -99,11 +99,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     "${TORCHVISION_WHEEL_URL}" \
     "${TORCHAUDIO_WHEEL_URL}"
 
-# Write a pip constraints file that locks PyTorch to exactly the versions
-# installed above. This prevents custom nodes from accidentally overriding them.
+# Write a pip constraints file that locks PyTorch and key packages.
+# This prevents custom node installs from accidentally downgrading them.
+# transformers>=4.51.3 is the minimum that supports huggingface-hub>=1.0,
+# which VibeVoice requires. Without this floor, old transformers breaks ComfyUI.
 RUN echo "torch @ ${TORCH_WHEEL_URL}" > /app/constraints.txt && \
     echo "torchvision @ ${TORCHVISION_WHEEL_URL}" >> /app/constraints.txt && \
-    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt
+    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt && \
+    echo "transformers>=4.51.3" >> /app/constraints.txt
 
 # Install SageAttention for improved attention mechanism performance.
 # Triton is required for SageAttention's CUDA kernels.
@@ -168,6 +171,11 @@ RUN for req in /app/default_custom_nodes/*/requirements.txt; do \
         [ -f "$req" ] || continue; \
         pip install -r "$req" -c /app/constraints.txt || true; \
     done
+
+# Ensure transformers>=4.51.3 is installed. Node installs above can leave an
+# older version that requires huggingface-hub<1.0, which crashes ComfyUI when
+# VibeVoice upgrades huggingface-hub to 1.x. Run this last so it always wins.
+RUN pip install "transformers>=4.51.3" -c /app/constraints.txt
 
 # Copy the startup script. Keeping it as a separate file avoids heredoc
 # quoting issues and makes it easy to read and lint independently.
