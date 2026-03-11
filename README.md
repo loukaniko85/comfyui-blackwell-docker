@@ -23,7 +23,7 @@ These nodes are bundled into the image and appear automatically on first boot:
 | [ComfyUI-Manager](https://github.com/Comfy-Org/ComfyUI-Manager) | Install, update, and manage custom nodes |
 | [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF) | Run GGUF-quantized models (LLMs, diffusion models) |
 | [ComfyUI-LTXVideo](https://github.com/Lightricks/ComfyUI-LTXVideo) | LTX-Video generation by Lightricks |
-| [ComfyUI-Qwen-TTS](https://github.com/flybirdxx/ComfyUI-Qwen-TTS) | Text-to-speech with Qwen3-TTS |
+| [VibeVoice-ComfyUI](https://github.com/Enemyx-net/VibeVoice-ComfyUI) | High-quality text-to-speech with VibeVoice |
 
 ### Comparison
 
@@ -43,7 +43,7 @@ loukaniko85/comfyui-blackwell-docker handles all of that:
 | **Blackwell CUDA 13.x PyTorch** | The official repo gives no guidance on this — wrong wheels break entirely |
 | **SageAttention pre-compiled** | Compiled from source against your exact CUDA+PyTorch at build time |
 | **Nunchaku / NVFP4 engine** | Wired in via `wheels.txt` with correct version matching |
-| **Bundled custom nodes** | Manager, GGUF, LTXVideo, and Qwen-TTS ready out of the box |
+| **Bundled custom nodes** | Manager, GGUF, LTXVideo, and VibeVoice ready out of the box |
 | **System isolation** | Your host Python/CUDA environment is untouched |
 | **One-command startup** | `docker-compose up -d` vs a multi-step manual setup |
 | **Persistent volumes** | Models, outputs, nodes, workflows properly separated from the container |
@@ -119,7 +119,7 @@ Open your browser and go to:
 http://localhost:8188
 ```
 
-The four bundled custom nodes (Manager, GGUF, LTXVideo, Qwen-TTS) are seeded into your `custom_nodes/` directory automatically on first boot.
+The four bundled custom nodes (Manager, GGUF, LTXVideo, VibeVoice) are seeded into your `custom_nodes/` directory automatically on first boot.
 
 ## Directory Structure
 
@@ -194,7 +194,7 @@ docker-compose restart comfyui
 - **Mochi** — high-fidelity video generation
 
 ### Audio
-- **Qwen3-TTS** — text-to-speech via pre-installed ComfyUI-Qwen-TTS node
+- **VibeVoice** — high-quality text-to-speech via pre-installed VibeVoice-ComfyUI node
 - Audio generation nodes (ACE-Step, CosyVoice, AudioCraft, etc.)
 - System dependencies for `torchaudio`, `soundfile`, `librosa` are pre-installed
 

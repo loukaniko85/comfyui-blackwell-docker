@@ -38,6 +38,9 @@ services:
     environment:
       # Helps with VRAM fragmentation - improves stability
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      # VibeVoice model to auto-download on first run (set in .env)
+      # Options: VibeVoice-1.5B, VibeVoice-Large, VibeVoice-Large-Q8, VibeVoice-Large-Q4, none
+      - VIBEVOICE_MODEL=${VIBEVOICE_MODEL:-VibeVoice-1.5B}
     
     # Command line arguments for ComfyUI
     # Customize in .env file via COMFYUI_ARGS and RESERVE_VRAM

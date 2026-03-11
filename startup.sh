@@ -42,6 +42,46 @@ if [ -d "/app/custom_nodes" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Download VibeVoice models on first run if not already present.
+# huggingface_hub is available because it is a VibeVoice requirement installed
+# at build time. Set VIBEVOICE_MODEL=none to skip the download entirely.
+# Options: VibeVoice-1.5B (5.4GB), VibeVoice-Large (18.7GB),
+#          VibeVoice-Large-Q8 (11.6GB), VibeVoice-Large-Q4 (6.6GB)
+# ---------------------------------------------------------------------------
+VIBEVOICE_MODEL="${VIBEVOICE_MODEL:-VibeVoice-1.5B}"
+VIBEVOICE_DIR="/app/models/vibevoice"
+
+if [ "${VIBEVOICE_MODEL}" != "none" ]; then
+    case "${VIBEVOICE_MODEL}" in
+        VibeVoice-1.5B)     HF_REPO="microsoft/VibeVoice-1.5B" ;;
+        VibeVoice-Large)    HF_REPO="aoi-ot/VibeVoice-Large" ;;
+        VibeVoice-Large-Q8) HF_REPO="FabioSarracino/VibeVoice-Large-Q8" ;;
+        VibeVoice-Large-Q4) HF_REPO="DevParker/VibeVoice7b-low-vram" ;;
+        *)
+            echo "Unknown VIBEVOICE_MODEL '${VIBEVOICE_MODEL}', skipping download."
+            HF_REPO=""
+            ;;
+    esac
+
+    # Download tokenizer files if not already present
+    TOKENIZER_DIR="${VIBEVOICE_DIR}/tokenizer"
+    if [ ! -f "${TOKENIZER_DIR}/tokenizer.json" ]; then
+        echo "Downloading VibeVoice tokenizer (Qwen/Qwen2.5-1.5B)..."
+        mkdir -p "${TOKENIZER_DIR}"
+        python3 -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Qwen/Qwen2.5-1.5B', local_dir='${TOKENIZER_DIR}', allow_patterns=['tokenizer*.json', 'vocab.json', 'merges.txt'])" \
+            || echo "Warning: VibeVoice tokenizer download failed"
+    fi
+
+    # Download the selected model if its directory does not yet exist
+    if [ -n "${HF_REPO}" ] && [ ! -d "${VIBEVOICE_DIR}/${VIBEVOICE_MODEL}" ]; then
+        echo "Downloading VibeVoice model: ${VIBEVOICE_MODEL} (${HF_REPO})..."
+        mkdir -p "${VIBEVOICE_DIR}/${VIBEVOICE_MODEL}"
+        python3 -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='${HF_REPO}', local_dir='${VIBEVOICE_DIR}/${VIBEVOICE_MODEL}')" \
+            || echo "Warning: VibeVoice model download failed"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # Run install.py for nodes that need post-install setup
 # ---------------------------------------------------------------------------
 if [ -d "/app/custom_nodes" ]; then

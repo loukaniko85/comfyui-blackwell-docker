@@ -99,13 +99,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     "${TORCHVISION_WHEEL_URL}" \
     "${TORCHAUDIO_WHEEL_URL}"
 
-# Write a pip constraints file that locks PyTorch and key packages to exact
-# versions. This prevents custom node installs from accidentally downgrading them.
-# transformers>=4.52.0 is required by ComfyUI-Qwen-TTS (check_model_inputs).
+# Write a pip constraints file that locks PyTorch to exactly the versions
+# installed above. This prevents custom nodes from accidentally overriding them.
 RUN echo "torch @ ${TORCH_WHEEL_URL}" > /app/constraints.txt && \
     echo "torchvision @ ${TORCHVISION_WHEEL_URL}" >> /app/constraints.txt && \
-    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt && \
-    echo "transformers>=4.52.0" >> /app/constraints.txt
+    echo "torchaudio @ ${TORCHAUDIO_WHEEL_URL}" >> /app/constraints.txt
 
 # Install SageAttention for improved attention mechanism performance.
 # Triton is required for SageAttention's CUDA kernels.
@@ -160,7 +158,7 @@ RUN --mount=type=bind,source=.,target=/mnt/context,ro \
 # they are visible even when the host volume overlays /app/custom_nodes.
 RUN mkdir -p /app/default_custom_nodes && \
     git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git       /app/default_custom_nodes/ComfyUI-Manager && \
-    git clone --depth 1 https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git      /app/default_custom_nodes/ComfyUI-Qwen-TTS && \
+    git clone --depth 1 https://github.com/Enemyx-net/VibeVoice-ComfyUI.git    /app/default_custom_nodes/VibeVoice-ComfyUI && \
     git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git             /app/default_custom_nodes/ComfyUI-GGUF && \
     git clone --depth 1 https://github.com/Lightricks/ComfyUI-LTXVideo.git     /app/default_custom_nodes/ComfyUI-LTXVideo
 
@@ -170,10 +168,6 @@ RUN for req in /app/default_custom_nodes/*/requirements.txt; do \
         [ -f "$req" ] || continue; \
         pip install -r "$req" -c /app/constraints.txt || true; \
     done
-
-# ComfyUI-Qwen-TTS requires transformers>=4.52.0 for check_model_inputs.
-# Force-upgrade here so the pinned PyTorch versions are still respected.
-RUN pip install "transformers>=4.52.0" -c /app/constraints.txt
 
 # Copy the startup script. Keeping it as a separate file avoids heredoc
 # quoting issues and makes it easy to read and lint independently.
